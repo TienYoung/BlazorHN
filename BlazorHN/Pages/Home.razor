@@ -1,7 +1,29 @@
 ﻿@page "/"
+@using BlazorHN.Models
+@using BlazorHN.Services
+@inject HackerNewsService HnService
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Hacker News</h1>
 
-Welcome to your new app.
+@if (_item is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <h2>@_item.Title</h2>
+    <p>by @_item.By</p>
+    <a href="@_item.Url" target="_blank">Read more</a>
+}
+
+@code 
+{
+    private HackerNewsItem? _item;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _item = await HnService.GetItemAsync(8863);
+    }
+}

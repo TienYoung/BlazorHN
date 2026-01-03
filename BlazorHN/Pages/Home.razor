@@ -1,7 +1,7 @@
 ﻿@page "/"
 @using BlazorHN.Models
 @using BlazorHN.Services
-@inject HackerNewsService HnService
+@inject IHackerNewsService HnService
 
 <PageTitle>Home</PageTitle>
 
@@ -24,6 +24,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _item = await HnService.GetItemAsync(8863);
+        var idList = await HnService.GetTopStoryIdListAsync();
+        _item = await HnService.GetItemAsync(idList.First());
     }
 }

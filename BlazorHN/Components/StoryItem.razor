@@ -1,0 +1,42 @@
+﻿@using BlazorHN.Models
+@using Microsoft.FluentUI.AspNetCore.Components
+
+<FluentCard class="item-container" style="margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+    <div class="item-header">
+        <a href="@Item.Url" target="_blank" style="text-decoration: none; font-weight: bold; color: #000;">
+            @((MarkupString)(Item.Title ?? ""))
+        </a>
+
+        @if (Item.HasUrl)
+        {
+            <span style="color: #828282; font-size: 0.8em;">
+                (@GetDomain(Item.Url))
+            </span>
+        }
+    </div>
+
+    <div class="item-meta" style="color: #828282; font-size: 0.8em;">
+        <span>@Item.Score points</span>
+        <span>by @Item.By</span>
+        <span>@Item.PostedAt.ToString("g")</span>
+        <span>| @Item.Descendants comments</span>
+    </div>
+</FluentCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public HackerNewsItem Item { get; set; } = default!;
+
+    private string GetDomain(string? url)
+    {
+        if (string.IsNullOrEmpty(url)) return string.Empty;
+        try
+        {
+            return new Uri(url).Host.Replace("www.", "");
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+}

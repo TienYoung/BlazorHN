@@ -1,30 +1,38 @@
 ﻿@page "/"
+@using BlazorHN.Components
 @using BlazorHN.Models
 @using BlazorHN.Services
+@using Microsoft.FluentUI.AspNetCore.Components
 @inject IHackerNewsService HnService
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Hacker News</PageTitle>
 
-<h1>Hacker News</h1>
+<div style="background-color: #ff6600; padding: 10px; margin-bottom: 20px;">
+    <strong>Hacker News</strong>
+</div>
 
-@if (_item is null)
+@if (_itemList is null)
 {
-    <p><em>Loading...</em></p>
+    <FluentProgressRing/>
 }
 else
 {
-    <h2>@_item.Title</h2>
-    <p>by @_item.By</p>
-    <a href="@_item.Url" target="_blank">Read more</a>
+    <div class="list-group">
+        @foreach (var item in _itemList)
+        {
+            <StoryItem Item="@item" />
+        }
+    </div>
 }
 
 @code 
 {
-    private HackerNewsItem? _item;
+    private List<HackerNewsItem>? _itemList;
 
     protected override async Task OnInitializedAsync()
     {
         var idList = await HnService.GetTopStoryIdListAsync();
-        _item = await HnService.GetItemAsync(idList.First());
+        var result = await Task.WhenAll(idList.Take(5).Select(id => HnService.GetItemAsync(id)));
+        _itemList = result.Where(i => i is not null).Cast<HackerNewsItem>().ToList();
     }
 }

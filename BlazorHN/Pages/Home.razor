@@ -1,9 +1,11 @@
-﻿@page "/"
+@page "/"
 @using BlazorHN.Components
 @using BlazorHN.Models
 @using BlazorHN.Services
 @using Microsoft.FluentUI.AspNetCore.Components
 @inject IHackerNewsService HnService
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <PageTitle>Hacker News</PageTitle>
 
@@ -13,26 +15,84 @@
 
 @if (_itemList is null)
 {
-    <FluentProgressRing/>
+    <FluentProgressRing />
 }
 else
 {
     <div class="list-group">
-        @foreach (var item in _itemList)
+        @foreach (var (item, i) in _itemList.Select((x, i) => (x, i)))
         {
-            <StoryItem Item="@item" />
+            <StoryItem Index="@(i + 1)" Item="@item" />
         }
     </div>
+
+    <div @ref="_sentinel" style="height: 1px;"></div>
+
+    @if (_loadingMore)
+    {
+        <div style="display: flex; justify-content: center; padding: 16px;">
+            <FluentProgressRing />
+        </div>
+    }
 }
 
-@code 
+@code
 {
+    private const int PageSize = 15;
+
     private List<HackerNewsItem>? _itemList;
+    private List<int> _allIds = [];
+    private int _offset = 0;
+    private bool _loadingMore = false;
+    private ElementReference _sentinel;
+    private DotNetObjectReference<Home>? _selfRef;
+    private bool _observerInitialized = false;
 
     protected override async Task OnInitializedAsync()
     {
-        var idList = await HnService.GetTopStoryIdListAsync();
-        var result = await Task.WhenAll(idList.Take(5).Select(id => HnService.GetItemAsync(id)));
-        _itemList = result.Where(i => i is not null).Cast<HackerNewsItem>().ToList();
+        _allIds = await HnService.GetTopStoryIdListAsync();
+        await FetchNextBatch();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_observerInitialized && _itemList is not null)
+        {
+            _observerInitialized = true;
+            _selfRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("infiniteScroll.init", _sentinel, _selfRef);
+        }
+    }
+
+    [JSInvokable]
+    public async Task LoadMore()
+    {
+        if (_loadingMore || _offset >= _allIds.Count) return;
+        _loadingMore = true;
+        StateHasChanged();
+
+        await FetchNextBatch();
+
+        _loadingMore = false;
+        StateHasChanged();
+    }
+
+    private async Task FetchNextBatch()
+    {
+        var batch = _allIds.Skip(_offset).Take(PageSize).ToList();
+        if (batch.Count == 0) return;
+
+        var results = await Task.WhenAll(batch.Select(id => HnService.GetItemAsync(id)));
+        var valid = results.Where(i => i is not null).Cast<HackerNewsItem>();
+
+        _itemList ??= [];
+        _itemList.AddRange(valid);
+        _offset += batch.Count;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await JS.InvokeVoidAsync("infiniteScroll.dispose");
+        _selfRef?.Dispose();
     }
 }

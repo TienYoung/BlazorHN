@@ -1,31 +1,38 @@
-﻿@using BlazorHN.Models
+@using BlazorHN.Models
 @using Microsoft.FluentUI.AspNetCore.Components
+@inject NavigationManager Nav
 
-<FluentCard class="item-container" style="margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+<FluentCard class="item-container" style="margin-bottom: 12px; padding: 12px; cursor: pointer;" @onclick="GoToComments">
     <div class="item-header">
-        <a href="@Item.Url" target="_blank" style="text-decoration: none; font-weight: bold; color: #000;">
+        <span style="color: #828282; font-size: 0.9em; margin-right: 8px; min-width: 24px; display: inline-block; text-align: right;">@Index.</span>
+        <span style="font-weight: bold; color: #000;">
             @((MarkupString)(Item.Title ?? ""))
-        </a>
+        </span>
 
         @if (Item.HasUrl)
         {
-            <span style="color: #828282; font-size: 0.8em;">
+            <a href="@Item.Url" target="_blank" @onclick:stopPropagation style="color: #828282; font-size: 0.8em; margin-left: 6px;">
                 (@GetDomain(Item.Url))
-            </span>
+            </a>
         }
     </div>
 
-    <div class="item-meta" style="color: #828282; font-size: 0.8em;">
+    <div class="item-meta" style="color: #828282; font-size: 0.8em; margin-top: 4px;">
         <span>@Item.Score points</span>
-        <span>by @Item.By</span>
+        <span style="margin: 0 4px;">by @Item.By</span>
         <span>@Item.PostedAt.ToString("g")</span>
-        <span>| @Item.Descendants comments</span>
+        <span style="margin-left: 4px;">| @Item.Descendants comments</span>
     </div>
 </FluentCard>
 
 @code {
     [Parameter, EditorRequired]
+    public int Index { get; set; }
+
+    [Parameter, EditorRequired]
     public HackerNewsItem Item { get; set; } = default!;
+
+    private void GoToComments() => Nav.NavigateTo($"/item/{Item.Id}");
 
     private string GetDomain(string? url)
     {

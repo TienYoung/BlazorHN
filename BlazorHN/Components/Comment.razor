@@ -1,0 +1,46 @@
+@using BlazorHN.Models
+@using Microsoft.FluentUI.AspNetCore.Components
+
+@if (Item is not null && !Item.Deleted && !Item.Dead)
+{
+    <div style="margin-left: @(Depth * 20)px; border-left: 2px solid #eee; padding-left: 10px; margin-top: 10px;">
+        <div style="color: #828282; font-size: 0.8em; margin-bottom: 4px;">
+            <strong>@Item.By</strong>
+            <span style="margin-left: 8px;">@Item.PostedAt.ToString("g")</span>
+        </div>
+        <div style="font-size: 0.9em; line-height: 1.5;">
+            @((MarkupString)(Item.Text ?? ""))
+        </div>
+        @if (_children is not null)
+        {
+            @foreach (var child in _children)
+            {
+                <Comment Item="@child" AllItems="@AllItems" Depth="@(Depth + 1)" />
+            }
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public HackerNewsItem Item { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public Dictionary<int, HackerNewsItem> AllItems { get; set; } = default!;
+
+    [Parameter]
+    public int Depth { get; set; } = 0;
+
+    private List<HackerNewsItem>? _children;
+
+    protected override void OnParametersSet()
+    {
+        if (Item.Kids is { Count: > 0 })
+        {
+            _children = Item.Kids
+                .Where(id => AllItems.ContainsKey(id))
+                .Select(id => AllItems[id])
+                .ToList();
+        }
+    }
+}

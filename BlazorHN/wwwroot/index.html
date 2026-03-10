@@ -27,6 +27,23 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
+    <script>
+        window.infiniteScroll = {
+            observer: null,
+            init: function (sentinel, dotnetRef) {
+                if (this.observer) this.observer.disconnect();
+                this.observer = new IntersectionObserver(entries => {
+                    if (entries[0].isIntersecting) {
+                        dotnetRef.invokeMethodAsync('LoadMore');
+                    }
+                }, { rootMargin: '200px' });
+                this.observer.observe(sentinel);
+            },
+            dispose: function () {
+                if (this.observer) { this.observer.disconnect(); this.observer = null; }
+            }
+        };
+    </script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
     <script>navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });</script>
 </body>

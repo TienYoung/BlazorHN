@@ -1,0 +1,106 @@
+@page "/item/{Id:int}"
+@using BlazorHN.Components
+@using BlazorHN.Models
+@using BlazorHN.Services
+@using Microsoft.FluentUI.AspNetCore.Components
+@inject IHackerNewsService HnService
+@inject NavigationManager Nav
+
+<PageTitle>@(_story?.Title ?? "Comments") | Hacker News</PageTitle>
+
+<div style="background-color: #ff6600; padding: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+    <a href="/" style="color: #000; text-decoration: none; font-weight: bold;">&#8592;</a>
+    <strong>Hacker News</strong>
+</div>
+
+@if (_story is null)
+{
+    <FluentProgressRing />
+}
+else
+{
+    <div style="margin-bottom: 20px; padding: 0 8px;">
+        <h2 style="margin: 0 0 8px 0; font-size: 1.1em;">
+            @if (_story.HasUrl)
+            {
+                <a href="@_story.Url" target="_blank" style="text-decoration: none; color: #000;">@_story.Title</a>
+            }
+            else
+            {
+                @_story.Title
+            }
+        </h2>
+        <div style="color: #828282; font-size: 0.85em;">
+            <span>@_story.Score points</span>
+            <span style="margin: 0 6px;">by @_story.By</span>
+            <span>@_story.PostedAt.ToString("g")</span>
+            <span style="margin-left: 6px;">| @_story.Descendants comments</span>
+        </div>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #eee; margin-bottom: 16px;" />
+
+    @if (_loading)
+    {
+        <FluentProgressRing />
+    }
+    else if (_topLevelComments is not null && _topLevelComments.Count > 0)
+    {
+        @foreach (var comment in _topLevelComments)
+        {
+            <Comment Item="@comment" AllItems="@_allItems" />
+        }
+    }
+    else
+    {
+        <p style="color: #828282;">No comments yet.</p>
+    }
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private HackerNewsItem? _story;
+    private List<HackerNewsItem>? _topLevelComments;
+    private Dictionary<int, HackerNewsItem> _allItems = new();
+    private bool _loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _story = null;
+        _loading = true;
+        _allItems = new();
+        _topLevelComments = null;
+
+        _story = await HnService.GetItemAsync(Id);
+        if (_story?.Kids is { Count: > 0 })
+        {
+            await LoadCommentsAsync(_story.Kids);
+            _topLevelComments = _story.Kids
+                .Where(id => _allItems.ContainsKey(id))
+                .Select(id => _allItems[id])
+                .ToList();
+        }
+        _loading = false;
+    }
+
+    private async Task LoadCommentsAsync(List<int> ids)
+    {
+        var items = await Task.WhenAll(ids.Select(id => HnService.GetItemAsync(id)));
+        var valid = items.Where(i => i is not null).Cast<HackerNewsItem>().ToList();
+
+        foreach (var item in valid)
+            _allItems[item.Id] = item;
+
+        var childIds = valid
+            .Where(i => i.Kids is { Count: > 0 })
+            .SelectMany(i => i.Kids!)
+            .Distinct()
+            .Where(id => !_allItems.ContainsKey(id))
+            .ToList();
+
+        if (childIds.Count > 0)
+            await LoadCommentsAsync(childIds);
+    }
+}

@@ -3,12 +3,12 @@
 
 @if (Item is not null && !Item.Deleted && !Item.Dead)
 {
-    <div style="margin-left: @(Depth * 20)px; border-left: 2px solid #eee; padding-left: 10px; margin-top: 10px;">
-        <div style="color: #828282; font-size: 0.8em; margin-bottom: 4px;">
+    <div class="comment" style="--depth: @Depth">
+        <div class="comment-author">
             <strong>@Item.By</strong>
             <span style="margin-left: 8px;">@Item.PostedAt.ToString("g")</span>
         </div>
-        <div style="font-size: 0.9em; line-height: 1.5;">
+        <div class="comment-body">
             @((MarkupString)(Item.Text ?? ""))
         </div>
         @if (_children is not null)

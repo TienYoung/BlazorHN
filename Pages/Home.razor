@@ -2,18 +2,22 @@
 @using BlazorHN.Components
 @using BlazorHN.Models
 @using BlazorHN.Services
-@using Microsoft.FluentUI.AspNetCore.Components
 @inject IHackerNewsService HnService
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
 <PageTitle>Hacker News</PageTitle>
 
-<div class="hn-page">
-    <div class="hn-header">
-        <span class="hn-header-title">Hacker News</span>
+<div class="hn-header">
+    <div class="hn-header-inner">
+        <div class="hn-header-logo">
+            <span class="hn-header-wordmark">Hacker News</span>
+            <span class="hn-header-badge">Top</span>
+        </div>
     </div>
+</div>
 
+<div class="hn-page">
     @if (_itemList is null)
     {
         <div class="hn-spinner-center">
@@ -22,12 +26,10 @@
     }
     else
     {
-        <div class="hn-story-list">
-            @foreach (var (item, i) in _itemList.Select((x, i) => (x, i)))
-            {
-                <StoryItem Index="@(i + 1)" Item="@item" />
-            }
-        </div>
+        @foreach (var (item, i) in _itemList.Select((x, i) => (x, i)))
+        {
+            <StoryItem Index="@(i + 1)" Item="@item" />
+        }
 
         <div @ref="_sentinel" style="height: 1px;"></div>
 

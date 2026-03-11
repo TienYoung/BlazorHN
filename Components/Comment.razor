@@ -1,12 +1,11 @@
 @using BlazorHN.Models
-@using Microsoft.FluentUI.AspNetCore.Components
 
 @if (Item is not null && !Item.Deleted && !Item.Dead)
 {
     <div class="comment" style="--depth: @Depth">
-        <div class="comment-author">
-            <strong>@Item.By</strong>
-            <span style="margin-left: 8px;">@Item.PostedAt.ToString("g")</span>
+        <div class="comment-header">
+            <span class="comment-author">@Item.By</span>
+            <span class="comment-time">@Item.PostedAt.ToString("g")</span>
         </div>
         <div class="comment-body">
             @((MarkupString)(Item.Text ?? ""))

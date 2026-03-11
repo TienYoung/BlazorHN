@@ -2,18 +2,21 @@
 @using BlazorHN.Components
 @using BlazorHN.Models
 @using BlazorHN.Services
-@using Microsoft.FluentUI.AspNetCore.Components
 @inject IHackerNewsService HnService
 @inject NavigationManager Nav
 
 <PageTitle>@(_story?.Title ?? "Comments") | Hacker News</PageTitle>
 
-<div class="hn-page">
-    <div class="hn-header">
+<div class="hn-header">
+    <div class="hn-header-inner">
         <a href="/" class="hn-header-back">&#8592;</a>
-        <span class="hn-header-title">Hacker News</span>
+        <div class="hn-header-logo">
+            <span class="hn-header-wordmark">Hacker News</span>
+        </div>
     </div>
+</div>
 
+<div class="hn-page">
     @if (_story is null)
     {
         <div class="hn-spinner-center">
@@ -22,26 +25,29 @@
     }
     else
     {
-        <div class="hn-story-detail">
-            <h2 class="hn-story-detail-title">
-                @if (_story.HasUrl)
-                {
-                    <a href="@_story.Url" target="_blank">@_story.Title</a>
-                }
-                else
-                {
-                    @_story.Title
-                }
-            </h2>
-            <div class="hn-story-detail-meta">
-                <span>@_story.Score points</span>
-                <span>by @_story.By</span>
-                <span>@_story.PostedAt.ToString("g")</span>
-                <span>| @_story.Descendants comments</span>
+        <FluentCard class="hn-story-detail-card">
+            <div class="hn-story-detail-inner">
+                <h1 class="hn-story-detail-title">
+                    @if (_story.HasUrl)
+                    {
+                        <a href="@_story.Url" target="_blank">@_story.Title</a>
+                    }
+                    else
+                    {
+                        @_story.Title
+                    }
+                </h1>
+                <div class="hn-story-detail-meta">
+                    <span class="hn-detail-score">▲ @_story.Score</span>
+                    <span class="meta-sep">·</span>
+                    <span>@_story.By</span>
+                    <span class="meta-sep">·</span>
+                    <span>@_story.PostedAt.ToString("g")</span>
+                    <span class="meta-sep">·</span>
+                    <span>@_story.Descendants comments</span>
+                </div>
             </div>
-        </div>
-
-        <hr class="hn-divider" />
+        </FluentCard>
 
         @if (_loading)
         {
@@ -51,12 +57,11 @@
         }
         else if (_topLevelComments is not null && _topLevelComments.Count > 0)
         {
-            <div class="hn-comments">
-                @foreach (var comment in _topLevelComments)
-                {
-                    <Comment Item="@comment" AllItems="@_allItems" />
-                }
-            </div>
+            <div class="hn-comments-header">@_topLevelComments.Count comments</div>
+            @foreach (var comment in _topLevelComments)
+            {
+                <Comment Item="@comment" AllItems="@_allItems" />
+            }
         }
         else
         {

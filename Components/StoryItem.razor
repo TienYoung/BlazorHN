@@ -1,24 +1,27 @@
 @using BlazorHN.Models
-@using Microsoft.FluentUI.AspNetCore.Components
 @inject NavigationManager Nav
 
 <FluentCard class="story-card" @onclick="GoToComments">
-    <div class="story-header">
-        <span class="story-index">@Index.</span>
-        <span class="story-title">@((MarkupString)(Item.Title ?? ""))</span>
-        @if (Item.HasUrl)
-        {
-            <a href="@Item.Url" target="_blank" class="story-domain" @onclick:stopPropagation>
-                (@GetDomain(Item.Url))
-            </a>
-        }
-    </div>
-
-    <div class="story-meta">
-        <span>@Item.Score points</span>
-        <span>by @Item.By</span>
-        <span>@Item.PostedAt.ToString("g")</span>
-        <span>| @Item.Descendants comments</span>
+    <div class="story-inner">
+        <span class="story-number">@Index</span>
+        <div class="story-body">
+            <div class="story-title-row">
+                <span class="story-title">@((MarkupString)(Item.Title ?? ""))</span>
+                @if (Item.HasUrl)
+                {
+                    <a href="@Item.Url" target="_blank" class="story-domain" @onclick:stopPropagation>@GetDomain(Item.Url)</a>
+                }
+            </div>
+            <div class="story-meta">
+                <span class="story-meta-score">▲ @Item.Score</span>
+                <span class="meta-sep">·</span>
+                <span>@Item.By</span>
+                <span class="meta-sep">·</span>
+                <span>@Item.PostedAt.ToString("g")</span>
+                <span class="meta-sep">·</span>
+                <span>@Item.Descendants comments</span>
+            </div>
+        </div>
     </div>
 </FluentCard>
 
@@ -34,13 +37,7 @@
     private string GetDomain(string? url)
     {
         if (string.IsNullOrEmpty(url)) return string.Empty;
-        try
-        {
-            return new Uri(url).Host.Replace("www.", "");
-        }
-        catch
-        {
-            return string.Empty;
-        }
+        try { return new Uri(url).Host.Replace("www.", ""); }
+        catch { return string.Empty; }
     }
 }

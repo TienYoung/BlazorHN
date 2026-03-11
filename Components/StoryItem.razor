@@ -32,7 +32,7 @@
     [Parameter, EditorRequired]
     public HackerNewsItem Item { get; set; } = default!;
 
-    private void GoToComments() => Nav.NavigateTo($"/item/{Item.Id}");
+    private void GoToComments() => Nav.NavigateTo($"item/{Item.Id}");
 
     private string GetDomain(string? url)
     {

@@ -4,12 +4,16 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0F6CBD" />
+    <meta name="theme-color" content="#f2f2ef" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f0f0e" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>BlazorHN</title>
+    <title>HN</title>
     <base href="/" />
     <link rel="preload" id="webassembly" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Plus+Jakarta+Sans:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="_content/Microsoft.FluentUI.AspNetCore.Components/css/reboot.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link href="BlazorHN.styles.css" rel="stylesheet" />
@@ -44,6 +48,47 @@
             },
             dispose: function () {
                 if (this.observer) { this.observer.disconnect(); this.observer = null; }
+            }
+        };
+
+        window.hnNav = {
+            _popHandler: null,
+            push: function (commentId) {
+                history.pushState({ commentId: commentId }, '');
+            },
+            onPop: function (dotnetRef) {
+                if (this._popHandler) window.removeEventListener('popstate', this._popHandler);
+                this._popHandler = function (e) {
+                    var id = e.state && e.state.commentId != null ? e.state.commentId : null;
+                    dotnetRef.invokeMethodAsync('OnPopState', id);
+                };
+                window.addEventListener('popstate', this._popHandler);
+            },
+            dispose: function () {
+                if (this._popHandler) {
+                    window.removeEventListener('popstate', this._popHandler);
+                    this._popHandler = null;
+                }
+            }
+        };
+
+        window.hnLayout = {
+            _mqListener: null,
+            isWide: function () {
+                return window.matchMedia('(min-width: 768px)').matches;
+            },
+            onResize: function (dotnetRef) {
+                var mq = window.matchMedia('(min-width: 768px)');
+                this._mqListener = function (e) {
+                    dotnetRef.invokeMethodAsync('OnLayoutChange', e.matches);
+                };
+                mq.addEventListener('change', this._mqListener);
+            },
+            dispose: function () {
+                if (this._mqListener) {
+                    window.matchMedia('(min-width: 768px)').removeEventListener('change', this._mqListener);
+                    this._mqListener = null;
+                }
             }
         };
     </script>

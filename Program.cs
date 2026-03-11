@@ -9,6 +9,7 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddFluentUIComponents();
+builder.Services.AddSingleton<AppStateService>();
 builder.Services.AddScoped<IHackerNewsService, HackerNewsService>(sp => new(new HttpClient { BaseAddress = new Uri("https://hacker-news.firebaseio.com/v0/") }));
 
 await builder.Build().RunAsync();

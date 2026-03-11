@@ -1,4 +1,4 @@
-﻿using BlazorHN.Models;
+using BlazorHN.Models;
 using System.Net.Http.Json;
 
 namespace BlazorHN.Services
@@ -8,13 +8,15 @@ namespace BlazorHN.Services
         private readonly HttpClient _httpClient;
 
         public HackerNewsService(HttpClient httpClient)
-        { 
+        {
             _httpClient = httpClient;
         }
 
-        public async Task<List<int>> GetTopStoryIdListAsync()
-        { 
-            var idList = await _httpClient.GetFromJsonAsync<List<int>>($"topstories.json");
+        public Task<List<int>> GetTopStoryIdListAsync() => GetStoryIdListAsync("topstories");
+
+        public async Task<List<int>> GetStoryIdListAsync(string type)
+        {
+            var idList = await _httpClient.GetFromJsonAsync<List<int>>($"{type}.json");
             return idList ?? new List<int>();
         }
 

@@ -1,45 +1,101 @@
-@using BlazorHN.Models
-
 @if (Item is not null && !Item.Deleted && !Item.Dead)
 {
-    <div class="comment" style="--depth: @Depth">
+    <div class="comment-card @ModeClass" @onclick="HandleClick">
         <div class="comment-header">
+            <div class="avatar" style="background-color: @AvatarColor">@Initials</div>
             <span class="comment-author">@Item.By</span>
-            <span class="comment-time">@Item.PostedAt.ToString("g")</span>
+            <span class="comment-time">@RelativeTime(Item.PostedAt)</span>
         </div>
-        <div class="comment-body">
+        <div class="comment-body @(Mode == CommentDisplayMode.Compressed ? "compressed" : "")">
             @((MarkupString)(Item.Text ?? ""))
         </div>
-        @if (_children is not null)
+        @if (Mode != CommentDisplayMode.Compressed)
         {
-            @foreach (var child in _children)
-            {
-                <Comment Item="@child" AllItems="@AllItems" Depth="@(Depth + 1)" />
-            }
+            <div class="comment-footer">
+                <button class="like-btn @(_liked ? "liked" : "")" @onclick:stopPropagation @onclick="ToggleLike">
+                    ▲ @DisplayScore
+                </button>
+                <div class="reply-pill @(DirectChildCount == 0 ? "leaf" : "")">
+                    @if (DirectChildCount == 0)
+                    {
+                        <span>leaf</span>
+                    }
+                    else if (DirectChildCount == 1)
+                    {
+                        <span>1 reply</span>
+                    }
+                    else
+                    {
+                        <span>@DirectChildCount replies</span>
+                    }
+                </div>
+            </div>
         }
     </div>
 }
 
 @code {
+    public enum CommentDisplayMode { List, Focus, Compressed }
+
+    private static readonly string[] AvatarColors =
+    [
+        "#FF6600", "#3B82F6", "#10B981", "#8B5CF6",
+        "#F59E0B", "#EF4444", "#06B6D4", "#EC4899"
+    ];
+
     [Parameter, EditorRequired]
     public HackerNewsItem Item { get; set; } = default!;
 
-    [Parameter, EditorRequired]
-    public Dictionary<int, HackerNewsItem> AllItems { get; set; } = default!;
+    [Parameter]
+    public CommentDisplayMode Mode { get; set; } = CommentDisplayMode.List;
 
     [Parameter]
-    public int Depth { get; set; } = 0;
+    public EventCallback<HackerNewsItem> OnClick { get; set; }
 
-    private List<HackerNewsItem>? _children;
+    private bool _liked = false;
+    private int DisplayScore => Item.Score + (_liked ? 1 : 0);
+    private int DirectChildCount => Item.Kids?.Count ?? 0;
 
-    protected override void OnParametersSet()
+    private string ModeClass => Mode switch
     {
-        if (Item.Kids is { Count: > 0 })
+        CommentDisplayMode.Focus => "focus",
+        CommentDisplayMode.Compressed => "compressed",
+        _ => ""
+    };
+
+    private string Initials
+    {
+        get
         {
-            _children = Item.Kids
-                .Where(id => AllItems.ContainsKey(id))
-                .Select(id => AllItems[id])
-                .ToList();
+            var by = Item.By ?? "??";
+            return by.Length >= 2 ? by[..2].ToUpper() : by.ToUpper();
         }
+    }
+
+    private string AvatarColor
+    {
+        get
+        {
+            var by = Item.By ?? "";
+            var hash = by.Sum(c => (int)c);
+            return AvatarColors[Math.Abs(hash) % AvatarColors.Length];
+        }
+    }
+
+    private void ToggleLike() => _liked = !_liked;
+
+    private void HandleClick()
+    {
+        if (Mode != CommentDisplayMode.Focus && OnClick.HasDelegate)
+            OnClick.InvokeAsync(Item);
+    }
+
+    private string RelativeTime(DateTime dt)
+    {
+        var span = DateTime.Now - dt;
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h";
+        if (span.TotalDays < 30) return $"{(int)span.TotalDays}d";
+        return $"{(int)(span.TotalDays / 30)}mo";
     }
 }

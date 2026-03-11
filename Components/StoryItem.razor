@@ -1,43 +1,44 @@
-@using BlazorHN.Models
 @inject NavigationManager Nav
+@inject AppStateService AppState
 
-<FluentCard class="story-card" @onclick="GoToComments">
-    <div class="story-inner">
-        <span class="story-number">@Index</span>
-        <div class="story-body">
-            <div class="story-title-row">
-                <span class="story-title">@((MarkupString)(Item.Title ?? ""))</span>
-                @if (Item.HasUrl)
-                {
-                    <a href="@Item.Url" target="_blank" class="story-domain" @onclick:stopPropagation>@GetDomain(Item.Url)</a>
-                }
-            </div>
-            <div class="story-meta">
-                <span class="story-meta-score">▲ @Item.Score</span>
-                <span class="meta-sep">·</span>
-                <span>@Item.By</span>
-                <span class="meta-sep">·</span>
-                <span>@Item.PostedAt.ToString("g")</span>
-                <span class="meta-sep">·</span>
-                <span>@Item.Descendants comments</span>
-            </div>
-        </div>
+<div class="story-card @(AppState.SelectedStoryId == Item.Id ? "selected" : "")" @onclick="GoToComments">
+    <h2 class="story-title">@Item.Title</h2>
+    @if (Item.HasUrl)
+    {
+        <a href="@Item.Url" target="_blank" class="story-domain" @onclick:stopPropagation>@GetDomain(Item.Url)</a>
+    }
+    <div class="story-meta">
+        <span>@Item.Score pts</span>
+        <span class="meta-dot">·</span>
+        <span>@Item.Descendants comments</span>
+        <span class="meta-dot">·</span>
+        <span>@RelativeTime(Item.PostedAt)</span>
     </div>
-</FluentCard>
+</div>
 
 @code {
     [Parameter, EditorRequired]
-    public int Index { get; set; }
-
-    [Parameter, EditorRequired]
     public HackerNewsItem Item { get; set; } = default!;
 
-    private void GoToComments() => Nav.NavigateTo($"item/{Item.Id}");
+    private void GoToComments()
+    {
+        AppState.SelectStory(Item.Id);
+        Nav.NavigateTo($"item/{Item.Id}");
+    }
 
     private string GetDomain(string? url)
     {
         if (string.IsNullOrEmpty(url)) return string.Empty;
         try { return new Uri(url).Host.Replace("www.", ""); }
         catch { return string.Empty; }
+    }
+
+    private string RelativeTime(DateTime dt)
+    {
+        var span = DateTime.Now - dt;
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h";
+        if (span.TotalDays < 30) return $"{(int)span.TotalDays}d";
+        return $"{(int)(span.TotalDays / 30)}mo";
     }
 }

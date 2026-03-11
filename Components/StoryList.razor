@@ -1,0 +1,121 @@
+@inject IHackerNewsService HnService
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="tab-bar">
+    @foreach (var tab in _tabs)
+    {
+        <button class="tab-item @(_activeTab == tab.Key ? "active" : "")" @onclick="@(() => SwitchTab(tab.Key))">
+            @tab.Label
+        </button>
+    }
+</div>
+
+<div class="story-list-body">
+    @if (_itemList is null)
+    {
+        <div class="hn-spinner-center">
+            <FluentProgressRing />
+        </div>
+    }
+    else
+    {
+        @foreach (var item in _itemList)
+        {
+            <StoryItem Item="@item" />
+        }
+
+        <div @ref="_sentinel" style="height: 1px;"></div>
+
+        @if (_loadingMore)
+        {
+            <div class="hn-spinner-center">
+                <FluentProgressRing />
+            </div>
+        }
+    }
+</div>
+
+@code {
+    record TabDef(string Key, string Label);
+
+    private readonly List<TabDef> _tabs =
+    [
+        new("topstories", "Top"),
+        new("newstories", "New"),
+        new("askstories", "Ask"),
+        new("showstories", "Show"),
+        new("jobstories", "Jobs"),
+    ];
+
+    private const int PageSize = 15;
+    private string _activeTab = "topstories";
+    private List<HackerNewsItem>? _itemList;
+    private List<int> _allIds = [];
+    private int _offset = 0;
+    private bool _loadingMore = false;
+    private ElementReference _sentinel;
+    private DotNetObjectReference<StoryList>? _selfRef;
+    private bool _observerInitialized = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTab(_activeTab);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_observerInitialized && _itemList is not null)
+        {
+            _observerInitialized = true;
+            _selfRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("infiniteScroll.init", _sentinel, _selfRef);
+        }
+    }
+
+    private async Task SwitchTab(string tab)
+    {
+        if (tab == _activeTab) return;
+        _activeTab = tab;
+        _itemList = null;
+        _allIds = [];
+        _offset = 0;
+        _observerInitialized = false;
+        StateHasChanged();
+        await LoadTab(tab);
+    }
+
+    private async Task LoadTab(string tab)
+    {
+        _allIds = await HnService.GetStoryIdListAsync(tab);
+        await FetchNextBatch();
+    }
+
+    [JSInvokable]
+    public async Task LoadMore()
+    {
+        if (_loadingMore || _offset >= _allIds.Count) return;
+        _loadingMore = true;
+        StateHasChanged();
+        await FetchNextBatch();
+        _loadingMore = false;
+        StateHasChanged();
+    }
+
+    private async Task FetchNextBatch()
+    {
+        var batch = _allIds.Skip(_offset).Take(PageSize).ToList();
+        if (batch.Count == 0) return;
+        var results = await Task.WhenAll(batch.Select(id => HnService.GetItemAsync(id)));
+        var valid = results.Where(i => i is not null).Cast<HackerNewsItem>();
+        _itemList ??= [];
+        _itemList.AddRange(valid);
+        _offset += batch.Count;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await JS.InvokeVoidAsync("infiniteScroll.dispose");
+        _selfRef?.Dispose();
+    }
+}

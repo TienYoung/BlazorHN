@@ -1,104 +1,15 @@
 @page "/"
-@using BlazorHN.Components
-@using BlazorHN.Models
-@using BlazorHN.Services
-@inject IHackerNewsService HnService
-@inject IJSRuntime JS
-@implements IAsyncDisposable
+@inject AppStateService AppState
 
 <PageTitle>Hacker News</PageTitle>
 
-<div class="hn-header">
-    <div class="hn-header-inner">
-        <div class="hn-header-logo">
-            <span class="hn-header-wordmark">Hacker News</span>
-            <span class="hn-header-badge">Top</span>
-        </div>
-    </div>
-</div>
-
-<div class="hn-page">
-    @if (_itemList is null)
-    {
-        <div class="hn-spinner-center">
-            <FluentProgressRing />
-        </div>
-    }
-    else
-    {
-        @foreach (var (item, i) in _itemList.Select((x, i) => (x, i)))
-        {
-            <StoryItem Index="@(i + 1)" Item="@item" />
-        }
-
-        <div @ref="_sentinel" style="height: 1px;"></div>
-
-        @if (_loadingMore)
-        {
-            <div class="hn-spinner-center">
-                <FluentProgressRing />
-            </div>
-        }
-    }
-</div>
-
-@code
+@if (AppState.IsWide)
 {
-    private const int PageSize = 15;
-
-    private List<HackerNewsItem>? _itemList;
-    private List<int> _allIds = [];
-    private int _offset = 0;
-    private bool _loadingMore = false;
-    private ElementReference _sentinel;
-    private DotNetObjectReference<Home>? _selfRef;
-    private bool _observerInitialized = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        _allIds = await HnService.GetTopStoryIdListAsync();
-        await FetchNextBatch();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!_observerInitialized && _itemList is not null)
-        {
-            _observerInitialized = true;
-            _selfRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("infiniteScroll.init", _sentinel, _selfRef);
-        }
-    }
-
-    [JSInvokable]
-    public async Task LoadMore()
-    {
-        if (_loadingMore || _offset >= _allIds.Count) return;
-        _loadingMore = true;
-        StateHasChanged();
-
-        await FetchNextBatch();
-
-        _loadingMore = false;
-        StateHasChanged();
-    }
-
-    private async Task FetchNextBatch()
-    {
-        var batch = _allIds.Skip(_offset).Take(PageSize).ToList();
-        if (batch.Count == 0) return;
-
-        var results = await Task.WhenAll(batch.Select(id => HnService.GetItemAsync(id)));
-        var valid = results.Where(i => i is not null).Cast<HackerNewsItem>();
-
-        _itemList ??= [];
-        _itemList.AddRange(valid);
-        _offset += batch.Count;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await JS.InvokeVoidAsync("infiniteScroll.dispose");
-        _selfRef?.Dispose();
-    }
+    <div class="hn-select-prompt">
+        <span>← select a story</span>
+    </div>
+}
+else
+{
+    <StoryList />
 }

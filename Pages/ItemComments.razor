@@ -1,74 +1,93 @@
 @page "/item/{Id:int}"
-@using BlazorHN.Components
-@using BlazorHN.Models
-@using BlazorHN.Services
 @inject IHackerNewsService HnService
-@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
-<PageTitle>@(_story?.Title ?? "Comments") | Hacker News</PageTitle>
+<PageTitle>@(_story?.Title ?? "Comments") | HN</PageTitle>
 
-<div class="hn-header">
-    <div class="hn-header-inner">
-        <a href="/" class="hn-header-back">&#8249;</a>
-        <div class="hn-header-logo">
-            <span class="hn-header-wordmark">Hacker News</span>
-        </div>
+@if (_story is null)
+{
+    <div class="hn-spinner-center" style="padding-top: 80px;">
+        <FluentProgressRing />
     </div>
-</div>
-
-<div class="hn-page">
-    @if (_story is null)
-    {
-        <div class="hn-spinner-center">
-            <FluentProgressRing />
-        </div>
-    }
-    else
-    {
-        <FluentCard class="hn-story-detail-card">
-            <div class="hn-story-detail-inner">
-                <h1 class="hn-story-detail-title">
+}
+else
+{
+    <div class="topbar @(_commentsExpanded ? "expanded" : "collapsed")" @onclick="ToggleComments">
+        <div class="topbar-content">
+            <div class="topbar-text">
+                <h1 class="topbar-title">@_story.Title</h1>
+                <div class="topbar-meta">
+                    <span>@_story.Score pts</span>
+                    <span class="meta-dot">·</span>
+                    <span>@_story.Descendants comments</span>
                     @if (_story.HasUrl)
                     {
-                        <a href="@_story.Url" target="_blank">@_story.Title</a>
+                        <span class="meta-dot">·</span>
+                        <a href="@_story.Url" target="_blank" class="topbar-domain" @onclick:stopPropagation>@GetDomain(_story.Url)</a>
+                    }
+                </div>
+            </div>
+            <div class="topbar-chevron @(_commentsExpanded ? "up" : "")">›</div>
+        </div>
+    </div>
+
+    @if (_commentsExpanded)
+    {
+        <div class="comments-area">
+            @if (_loading)
+            {
+                <div class="hn-spinner-center">
+                    <FluentProgressRing />
+                </div>
+            }
+            else if (_focusId is null)
+            {
+                <div class="comment-list">
+                    @if (_topLevelComments is { Count: > 0 })
+                    {
+                        @foreach (var comment in _topLevelComments)
+                        {
+                            <Comment Item="@comment" Mode="Comment.CommentDisplayMode.List" OnClick="FocusOn" />
+                        }
                     }
                     else
                     {
-                        @_story.Title
+                        <p class="hn-no-comments">No comments yet.</p>
                     }
-                </h1>
-                <div class="hn-story-detail-meta">
-                    <span class="hn-detail-score">▲ @_story.Score</span>
-                    <span class="meta-sep">·</span>
-                    <span>@_story.By</span>
-                    <span class="meta-sep">·</span>
-                    <span>@_story.PostedAt.ToString("g")</span>
-                    <span class="meta-sep">·</span>
-                    <span>@_story.Descendants comments</span>
                 </div>
-            </div>
-        </FluentCard>
-
-        @if (_loading)
-        {
-            <div class="hn-spinner-center">
-                <FluentProgressRing />
-            </div>
-        }
-        else if (_topLevelComments is not null && _topLevelComments.Count > 0)
-        {
-            <div class="hn-comments-header">@_topLevelComments.Count comments</div>
-            @foreach (var comment in _topLevelComments)
-            {
-                <Comment Item="@comment" AllItems="@_allItems" />
             }
-        }
-        else
-        {
-            <p class="hn-no-comments">No comments yet.</p>
-        }
+            else
+            {
+                @if (FocusItem is not null)
+                {
+                    <div class="focus-view" style="grid-template-columns: @FocusGridTemplate">
+                        @if (ParentItem is not null)
+                        {
+                            <div class="focus-col focus-col-left">
+                                <div class="col-label">↑ @ParentItem.By</div>
+                                <Comment Item="@ParentItem" Mode="Comment.CommentDisplayMode.Compressed" OnClick="FocusOn" />
+                            </div>
+                        }
+                        <div class="focus-col focus-col-center">
+                            <Comment Item="@FocusItem" Mode="Comment.CommentDisplayMode.Focus" />
+                        </div>
+                        @if (FocusChildren.Count > 0)
+                        {
+                            <div class="focus-col focus-col-right">
+                                <div class="col-label">↓ @FocusChildren.Count repl@(FocusChildren.Count == 1 ? "y" : "ies")</div>
+                                @foreach (var child in FocusChildren)
+                                {
+                                    <Comment Item="@child" Mode="Comment.CommentDisplayMode.Compressed" OnClick="FocusOn" />
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
     }
-</div>
+}
 
 @code {
     [Parameter]
@@ -78,6 +97,38 @@
     private List<HackerNewsItem>? _topLevelComments;
     private Dictionary<int, HackerNewsItem> _allItems = new();
     private bool _loading = true;
+    private bool _commentsExpanded = true;
+    private int? _focusId;
+    private DotNetObjectReference<ItemComments>? _selfRef;
+
+    private HackerNewsItem? FocusItem =>
+        _focusId.HasValue && _allItems.TryGetValue(_focusId.Value, out var f) ? f : null;
+
+    private HackerNewsItem? ParentItem =>
+        FocusItem?.Parent is int pid && _allItems.TryGetValue(pid, out var p) ? p : null;
+
+    private List<HackerNewsItem> FocusChildren =>
+        FocusItem?.Kids?
+            .Where(id => _allItems.ContainsKey(id))
+            .Select(id => _allItems[id])
+            .Where(c => !c.Deleted && !c.Dead)
+            .ToList() ?? [];
+
+    private string FocusGridTemplate
+    {
+        get
+        {
+            var hasParent = ParentItem is not null;
+            var hasChildren = FocusChildren.Count > 0;
+            return (hasParent, hasChildren) switch
+            {
+                (true, true) => "22vw 1fr 22vw",
+                (true, false) => "22vw 1fr",
+                (false, true) => "1fr 22vw",
+                (false, false) => "1fr"
+            };
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -85,6 +136,7 @@
         _loading = true;
         _allItems = new();
         _topLevelComments = null;
+        _focusId = null;
 
         _story = await HnService.GetItemAsync(Id);
         if (_story?.Kids is { Count: > 0 })
@@ -93,27 +145,61 @@
             _topLevelComments = _story.Kids
                 .Where(id => _allItems.ContainsKey(id))
                 .Select(id => _allItems[id])
+                .Where(c => !c.Deleted && !c.Dead)
                 .ToList();
         }
         _loading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("hnNav.onPop", _selfRef);
+        }
     }
 
     private async Task LoadCommentsAsync(List<int> ids)
     {
         var items = await Task.WhenAll(ids.Select(id => HnService.GetItemAsync(id)));
         var valid = items.Where(i => i is not null).Cast<HackerNewsItem>().ToList();
-
-        foreach (var item in valid)
-            _allItems[item.Id] = item;
-
+        foreach (var item in valid) _allItems[item.Id] = item;
         var childIds = valid
             .Where(i => i.Kids is { Count: > 0 })
             .SelectMany(i => i.Kids!)
             .Distinct()
             .Where(id => !_allItems.ContainsKey(id))
             .ToList();
+        if (childIds.Count > 0) await LoadCommentsAsync(childIds);
+    }
 
-        if (childIds.Count > 0)
-            await LoadCommentsAsync(childIds);
+    private async Task FocusOn(HackerNewsItem item)
+    {
+        await JS.InvokeVoidAsync("hnNav.push", item.Id);
+        _focusId = item.Id;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnPopState(int? commentId)
+    {
+        _focusId = commentId;
+        StateHasChanged();
+    }
+
+    private void ToggleComments() => _commentsExpanded = !_commentsExpanded;
+
+    private string GetDomain(string? url)
+    {
+        if (string.IsNullOrEmpty(url)) return string.Empty;
+        try { return new Uri(url).Host.Replace("www.", ""); }
+        catch { return string.Empty; }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await JS.InvokeVoidAsync("hnNav.dispose");
+        _selfRef?.Dispose();
     }
 }

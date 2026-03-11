@@ -1,3 +1,49 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@inject AppStateService AppState
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
-@Body
+<div class="hn-layout @(AppState.IsWide ? "hn-wide" : "")">
+    @if (AppState.IsWide)
+    {
+        <div class="hn-sidebar">
+            <StoryList />
+        </div>
+        <div class="hn-main-panel">
+            @Body
+        </div>
+    }
+    else
+    {
+        @Body
+    }
+</div>
+
+@code {
+    private DotNetObjectReference<MainLayout>? _selfRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            var isWide = await JS.InvokeAsync<bool>("hnLayout.isWide");
+            AppState.SetIsWide(isWide);
+            await JS.InvokeVoidAsync("hnLayout.onResize", _selfRef);
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public void OnLayoutChange(bool isWide)
+    {
+        AppState.SetIsWide(isWide);
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await JS.InvokeVoidAsync("hnLayout.dispose");
+        _selfRef?.Dispose();
+    }
+}

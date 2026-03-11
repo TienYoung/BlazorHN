@@ -8,54 +8,62 @@
 
 <PageTitle>@(_story?.Title ?? "Comments") | Hacker News</PageTitle>
 
-<div style="background-color: #ff6600; padding: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
-    <a href="/" style="color: #000; text-decoration: none; font-weight: bold;">&#8592;</a>
-    <strong>Hacker News</strong>
-</div>
-
-@if (_story is null)
-{
-    <FluentProgressRing />
-}
-else
-{
-    <div style="margin-bottom: 20px; padding: 0 8px;">
-        <h2 style="margin: 0 0 8px 0; font-size: 1.1em;">
-            @if (_story.HasUrl)
-            {
-                <a href="@_story.Url" target="_blank" style="text-decoration: none; color: #000;">@_story.Title</a>
-            }
-            else
-            {
-                @_story.Title
-            }
-        </h2>
-        <div style="color: #828282; font-size: 0.85em;">
-            <span>@_story.Score points</span>
-            <span style="margin: 0 6px;">by @_story.By</span>
-            <span>@_story.PostedAt.ToString("g")</span>
-            <span style="margin-left: 6px;">| @_story.Descendants comments</span>
-        </div>
+<div class="hn-page">
+    <div class="hn-header">
+        <a href="/" class="hn-header-back">&#8592;</a>
+        <span class="hn-header-title">Hacker News</span>
     </div>
 
-    <hr style="border: none; border-top: 1px solid #eee; margin-bottom: 16px;" />
-
-    @if (_loading)
+    @if (_story is null)
     {
-        <FluentProgressRing />
-    }
-    else if (_topLevelComments is not null && _topLevelComments.Count > 0)
-    {
-        @foreach (var comment in _topLevelComments)
-        {
-            <Comment Item="@comment" AllItems="@_allItems" />
-        }
+        <div class="hn-spinner-center">
+            <FluentProgressRing />
+        </div>
     }
     else
     {
-        <p style="color: #828282;">No comments yet.</p>
+        <div class="hn-story-detail">
+            <h2 class="hn-story-detail-title">
+                @if (_story.HasUrl)
+                {
+                    <a href="@_story.Url" target="_blank">@_story.Title</a>
+                }
+                else
+                {
+                    @_story.Title
+                }
+            </h2>
+            <div class="hn-story-detail-meta">
+                <span>@_story.Score points</span>
+                <span>by @_story.By</span>
+                <span>@_story.PostedAt.ToString("g")</span>
+                <span>| @_story.Descendants comments</span>
+            </div>
+        </div>
+
+        <hr class="hn-divider" />
+
+        @if (_loading)
+        {
+            <div class="hn-spinner-center">
+                <FluentProgressRing />
+            </div>
+        }
+        else if (_topLevelComments is not null && _topLevelComments.Count > 0)
+        {
+            <div class="hn-comments">
+                @foreach (var comment in _topLevelComments)
+                {
+                    <Comment Item="@comment" AllItems="@_allItems" />
+                }
+            </div>
+        }
+        else
+        {
+            <p class="hn-no-comments">No comments yet.</p>
+        }
     }
-}
+</div>
 
 @code {
     [Parameter]

@@ -9,32 +9,36 @@
 
 <PageTitle>Hacker News</PageTitle>
 
-<div style="background-color: #ff6600; padding: 10px; margin-bottom: 20px;">
-    <strong>Hacker News</strong>
-</div>
-
-@if (_itemList is null)
-{
-    <FluentProgressRing />
-}
-else
-{
-    <div class="list-group">
-        @foreach (var (item, i) in _itemList.Select((x, i) => (x, i)))
-        {
-            <StoryItem Index="@(i + 1)" Item="@item" />
-        }
+<div class="hn-page">
+    <div class="hn-header">
+        <span class="hn-header-title">Hacker News</span>
     </div>
 
-    <div @ref="_sentinel" style="height: 1px;"></div>
-
-    @if (_loadingMore)
+    @if (_itemList is null)
     {
-        <div style="display: flex; justify-content: center; padding: 16px;">
+        <div class="hn-spinner-center">
             <FluentProgressRing />
         </div>
     }
-}
+    else
+    {
+        <div class="hn-story-list">
+            @foreach (var (item, i) in _itemList.Select((x, i) => (x, i)))
+            {
+                <StoryItem Index="@(i + 1)" Item="@item" />
+            }
+        </div>
+
+        <div @ref="_sentinel" style="height: 1px;"></div>
+
+        @if (_loadingMore)
+        {
+            <div class="hn-spinner-center">
+                <FluentProgressRing />
+            </div>
+        }
+    }
+</div>
 
 @code
 {

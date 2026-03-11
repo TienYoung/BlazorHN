@@ -1,6 +1,7 @@
+/* Fluent 2 spacing grid: 4px base unit */
 .comment {
     margin-left: min(calc(var(--depth, 0) * 20px), 80px);
-    margin-top: 10px;
+    margin-top: 16px;
     border-left: 2px solid var(--neutral-stroke-divider-rest);
     padding-left: 12px;
 }
@@ -19,23 +20,28 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
 }
 
+/* Caption 1: 12px / 16px Bold */
 .comment-author {
-    font-size: 12px;
+    font-size: var(--type-ramp-minus-1-font-size);
+    line-height: var(--type-ramp-minus-1-line-height);
     font-weight: 700;
     color: var(--neutral-foreground-rest);
 }
 
+/* Caption 2: 10px / 14px */
 .comment-time {
-    font-size: 11px;
+    font-size: var(--type-ramp-minus-2-font-size);
+    line-height: var(--type-ramp-minus-2-line-height);
     color: var(--neutral-foreground-hint);
 }
 
+/* Body 1: 14px / 20px */
 .comment-body {
-    font-size: 13px;
-    line-height: 1.6;
+    font-size: var(--type-ramp-base-font-size);
+    line-height: var(--type-ramp-base-line-height);
 }
 
     ::deep .comment-body a {
@@ -46,12 +52,14 @@
         white-space: pre-wrap;
         word-break: break-word;
         background: var(--neutral-fill-layer-rest);
-        padding: 8px 10px;
+        padding: 8px 12px;
         border-radius: var(--control-corner-radius);
+        font-size: var(--type-ramp-minus-1-font-size);
+        line-height: var(--type-ramp-minus-1-line-height);
     }
 
     ::deep .comment-body p {
-        margin: 0 0 6px 0;
+        margin: 0 0 8px 0;
     }
 
         ::deep .comment-body p:last-child {

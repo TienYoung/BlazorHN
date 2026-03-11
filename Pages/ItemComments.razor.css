@@ -1,8 +1,9 @@
+/* Fluent 2 iOS nav bar: back chevron, 44pt touch target */
 .hn-header-back {
-    color: rgba(0, 0, 0, 0.85);
+    color: var(--foreground-on-accent-rest);
     text-decoration: none;
-    font-size: 1.25em;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 300;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -14,30 +15,34 @@
 }
 
     .hn-header-back:hover {
-        background-color: rgba(0, 0, 0, 0.08);
+        background-color: var(--accent-fill-active);
         text-decoration: none;
     }
 
+/* Subtitle 2: 16px / 22px Semibold */
 .hn-header-wordmark {
-    font-size: 15px;
-    font-weight: 700;
-    color: rgba(0, 0, 0, 0.9);
+    font-size: var(--type-ramp-plus-1-font-size);
+    line-height: var(--type-ramp-plus-1-line-height);
+    font-weight: 600;
+    color: var(--foreground-on-accent-rest);
     letter-spacing: -0.01em;
 }
 
+/* Fluent 2: card margin 16px, padding 16px×24px */
 .hn-story-detail-card {
     margin-bottom: 16px;
 }
 
 .hn-story-detail-inner {
-    padding: 16px 18px;
+    padding: 16px 24px;
 }
 
+/* Title 3: 24px / 32px Semibold */
 .hn-story-detail-title {
-    margin: 0 0 10px;
-    font-size: var(--type-ramp-plus-2-font-size);
+    margin: 0 0 8px;
+    font-size: var(--type-ramp-plus-3-font-size);
+    line-height: var(--type-ramp-plus-3-line-height);
     font-weight: 600;
-    line-height: 1.35;
 }
 
     .hn-story-detail-title a {
@@ -49,21 +54,25 @@
             text-decoration: underline;
         }
 
+/* Caption 1: 12px / 16px */
 .hn-story-detail-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    font-size: 13px;
+    font-size: var(--type-ramp-minus-1-font-size);
+    line-height: var(--type-ramp-minus-1-line-height);
     color: var(--neutral-foreground-hint);
 }
 
 .hn-detail-score {
-    color: #c45000;
+    color: var(--accent-foreground-rest);
     font-weight: 600;
 }
 
+/* Caption 2: 10px / 14px */
 .hn-comments-header {
-    font-size: 11px;
+    font-size: var(--type-ramp-minus-2-font-size);
+    line-height: var(--type-ramp-minus-2-line-height);
     font-weight: 600;
     color: var(--neutral-foreground-hint);
     text-transform: uppercase;

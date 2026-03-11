@@ -28,11 +28,11 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Fix base href for GitHub Pages
+        run: sed -i 's|<base href="/" />|<base href="/BlazorHN/" />|g' wwwroot/index.html
+
       - name: Publish
         run: dotnet publish BlazorHN.csproj -c Release -o release --nologo
-
-      - name: Fix base href for GitHub Pages
-        run: sed -i 's|<base href="/" />|<base href="/BlazorHN/" />|g' release/wwwroot/index.html
 
       - name: Add .nojekyll
         run: touch release/wwwroot/.nojekyll

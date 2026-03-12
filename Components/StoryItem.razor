@@ -23,7 +23,8 @@
     private void GoToComments()
     {
         AppState.SelectStory(Item.Id);
-        Nav.NavigateTo($"item/{Item.Id}");
+        if (AppState.IsWide)
+            Nav.NavigateTo($"item/{Item.Id}");
     }
 
     private string GetDomain(string? url)

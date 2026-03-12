@@ -1,5 +1,6 @@
 @page "/"
 @inject AppStateService AppState
+@implements IDisposable
 
 <PageTitle>Hacker News</PageTitle>
 
@@ -9,7 +10,17 @@
         <span>← select a story</span>
     </div>
 }
+else if (AppState.SelectedStoryId.HasValue)
+{
+    <ItemComments Id="@AppState.SelectedStoryId.Value" OnClose="@AppState.ClearStory" />
+}
 else
 {
     <StoryList />
+}
+
+@code {
+    protected override void OnInitialized() => AppState.OnChange += Refresh;
+    private void Refresh() => InvokeAsync(StateHasChanged);
+    public void Dispose() => AppState.OnChange -= Refresh;
 }

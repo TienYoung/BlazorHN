@@ -93,6 +93,9 @@ else
     [Parameter]
     public int Id { get; set; }
 
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
     private HackerNewsItem? _story;
     private List<HackerNewsItem>? _topLevelComments;
     private Dictionary<int, HackerNewsItem> _allItems = new();
@@ -188,7 +191,12 @@ else
         StateHasChanged();
     }
 
-    private void ToggleComments() => _commentsExpanded = !_commentsExpanded;
+    private async Task ToggleComments()
+    {
+        _commentsExpanded = !_commentsExpanded;
+        if (!_commentsExpanded && OnClose.HasDelegate)
+            await OnClose.InvokeAsync();
+    }
 
     private string GetDomain(string? url)
     {

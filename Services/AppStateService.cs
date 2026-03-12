@@ -13,6 +13,12 @@ namespace BlazorHN.Services
             OnChange?.Invoke();
         }
 
+        public void ClearStory()
+        {
+            SelectedStoryId = null;
+            OnChange?.Invoke();
+        }
+
         public void SetIsWide(bool wide)
         {
             IsWide = wide;
